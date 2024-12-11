@@ -4,40 +4,65 @@ const bcrypt      = require('bcrypt');
 module.exports = function ({ app, dbStocks }) {
 
   const api = 'https://stock-price-checker-proxy.freecodecamp.rocks/'
+  const salt = 10
 
   app.route('/api/stock-prices')
     .get(async function (req, res){
-
+      // in case delete the db:
+      const result = await dbStocks.deleteMany();
       const {stock, like} = req.query
       const stocks = Array.isArray(stock) ? stock : [stock]
 
       try {
-        //INSTRUCTIONS
-        //check if theres a stock in the db with the same name.
-        //if not, stock = create one
-        //if yes, stock = the existing one
-        //check in that stock if theres this machines ip address associated with it
-        //if no, add to the ip addresses this one(hash).
-        //if yes, continue
-        //return the stock name, price and likes(rel if multiple)
-
+        const stockData = []
+        const numberOfLikes = []
         for (let singleStock of stocks) {
-          console.log('inserting stock')
-          const insertStock = await dbStocks.insertOne({
-            'test': 123
-          });
-          console.log(insertStock)
-          const response = await fetch(api + `v1/stock/${singleStock}/quote`);
-          const data = await response.json();
-          stockArray.push({
-            stock: singleStock,
-            price: data.latestPrice
-          });
+          // format stock to lower letter
+          const formStock = singleStock.toLowerCase()
+          //check if theres a stock in the db with the same name.
+          let dbStock = await dbStocks.findOne({'stock': formStock})
+          if (!dbStock) {
+            // get price from api
+            const response = await fetch(api + `v1/stock/${singleStock}/quote`);
+            const data = await response.json();
+            //create one with stock, price and likes
+            dbStock = {
+              'stock': formStock,
+              'price': data.latestPrice,
+              'ip': []
+            }
+            const insertResult = await dbStocks.insertOne(dbStock);
+          }
+          if (JSON.parse(like)) {
+            //check in that stock if theres this machines ip address associated with it
+            const isIp = await Promise.all(
+              dbStock.ip.map(async (ip) => {
+                return bcrypt.compare(req.ip, ip);
+              })
+            ).then(results => results.some(result => result))
+            //if not, hash the ip first
+            if (!isIp) {
+              hashedIp = await bcrypt.hash(req.ip, salt)
+              dbStock.ip.push(hashedIp)
+              //add the hashed ip to the db stock
+              const updatedStock = await dbStocks.updateOne(
+                {'stock': formStock},
+                {
+                  $push: {
+                    'ip': hashedIp
+                  },
+                }
+              )
+            }
+            numberOfLikes.push(dbStock.ip.length)
+          }
+          stockData.push({
+            'stock': singleStock,
+            'price': dbStock.price,
+            'likes': dbStock.ip.length
+          })
         }
-        stockData = {'stockData': stockArray}
-
-        console.log(stockData)
-
+        //return the stock name, price and likes(rel if multiple)
         if (req.query.vscodeBrowserReqId) {
           res.send(stockData.stockData)
         } else {
@@ -49,5 +74,4 @@ module.exports = function ({ app, dbStocks }) {
       }
 
     });
-    
 };
