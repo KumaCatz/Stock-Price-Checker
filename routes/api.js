@@ -62,6 +62,14 @@ module.exports = function ({ app, dbStocks }) {
             'likes': dbStock.ip.length
           })
         }
+        if (stockData.length > 1) {
+          const likesDifference = stockData[0].likes - stockData[1].likes;
+
+          stockData[0].rel_likes = likesDifference;
+          stockData[1].rel_likes = -likesDifference;
+          delete stockData[0].likes;
+          delete stockData[1].likes; 
+        }
         //return the stock name, price and likes(rel if multiple)
         if (req.query.vscodeBrowserReqId) {
           res.send(stockData.stockData)
