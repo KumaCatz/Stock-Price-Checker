@@ -1,26 +1,12 @@
 'use strict';
 const bcrypt      = require('bcrypt');
 
-const api = 'https://stock-price-checker-proxy.freecodecamp.rocks/'
+module.exports = function ({ app, dbStocks }) {
 
-module.exports = function (app) {
+  const api = 'https://stock-price-checker-proxy.freecodecamp.rocks/'
 
   app.route('/api/stock-prices')
     .get(async function (req, res){
-//       //Anonymize IP
-// app.use(async (req, res, next) => {
-//   try {
-//     await client.connect();
-//     const hashedIp = await bcrypt.hash(req.ip, 10)
-//     await db.collection('users.user').insertOne({
-//       hashedIp
-//     });
-//     next()  
-//   } catch(err) {
-//     console.error('Error hashing IP:', err);
-//     res.status(500).send('Server error');
-//   }
-// })
 
       const {stock, like} = req.query
       const stocks = Array.isArray(stock) ? stock : [stock]
@@ -35,8 +21,12 @@ module.exports = function (app) {
         //if yes, continue
         //return the stock name, price and likes(rel if multiple)
 
-        const stockArray = []
-        for (let singleStock of stock) {
+        for (let singleStock of stocks) {
+          console.log('inserting stock')
+          const insertStock = await dbStocks.insertOne({
+            'test': 123
+          });
+          console.log(insertStock)
           const response = await fetch(api + `v1/stock/${singleStock}/quote`);
           const data = await response.json();
           stockArray.push({

@@ -11,8 +11,6 @@ const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
 const runner            = require('./test-runner');
 
-const app = express();
-
 //Connect MongoDB
 const client = new MongoClient(process.env.DB_URI, {
   serverApi: {
@@ -28,11 +26,16 @@ async function run() {
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
+  } catch (err) {
+    console.error("Error connecting to MongoDB:", err);
+    process.exit(1); // Exit if the database connection fails
   }
 }
+run()
+
+const database    = client.db("stockPriceChecker");
+const dbStocks    = database.collection("stocks");
+const app         = express();
 
 app.use('/public', express.static(process.cwd() + '/public'));
 
@@ -51,7 +54,7 @@ app.route('/')
 fccTestingRoutes(app);
 
 //Routing for API 
-apiRoutes(app);  
+apiRoutes({app, dbStocks});  
     
 //404 Not Found Middleware
 app.use(function(req, res, next) {
@@ -74,6 +77,13 @@ const listener = app.listen(process.env.PORT || 3000, function () {
       }
     }, 3500);
   }
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT signal received: closing MongoDB connection...');
+  await client.close();
+  console.log('MongoDB connection closed.');
+  process.exit(0); // Exit the app
 });
 
 module.exports = app; //for testing
