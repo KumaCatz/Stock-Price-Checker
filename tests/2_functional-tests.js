@@ -12,9 +12,9 @@ suite('Functional Tests', function() {
             .get('/api/stock-prices?stock=GOOG')
             .end((err, res) => {
                 assert.equal(res.status, 200)
-                assert.deepEqual(res.body.stock, 'GOOG')
-                assert.deepEqual(typeof res.body.price, 'number')
-                assert.deepEqual(typeof res.body.likes, 'number')
+                assert.deepEqual(res.body.stockData.stock, 'GOOG')
+                assert.deepEqual(typeof res.body.stockData.price, 'number')
+                assert.deepEqual(typeof res.body.stockData.likes, 'number')
                 done()
             })
     })
@@ -48,8 +48,8 @@ suite('Functional Tests', function() {
             .get('/api/stock-prices?stock=GOOG&stock=MSFT')
             .end((err, res) => {
                 assert.equal(res.status, 200)
-                assert.deepEqual(res.body[0].stock, 'GOOG')
-                assert.deepEqual(res.body[1].stock, 'MSFT')
+                assert.deepEqual(res.body.stockData[0].stock, 'GOOG')
+                assert.deepEqual(res.body.stockData[1].stock, 'MSFT')
                 done()
             })
     })

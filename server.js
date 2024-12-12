@@ -6,6 +6,7 @@ const cors        = require('cors');
 const {
   MongoClient, ServerApiVersion
 }                 = require('mongodb');
+const helmet      = require('helmet');
 
 const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
@@ -36,6 +37,16 @@ run()
 const database    = client.db("stockPriceChecker");
 const dbStocks    = database.collection("stocks");
 const app         = express();
+
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+    },
+  })
+);
 
 app.use('/public', express.static(process.cwd() + '/public'));
 

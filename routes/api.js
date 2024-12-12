@@ -66,19 +66,11 @@ module.exports = function ({ app, dbStocks }) {
           delete stockData[0].likes;
           delete stockData[1].likes; 
         }
-        //return the stock name, price and likes(rel if multiple)
-        if (like) {
-          if (stockData.length == 1) {
-            res.send({'stockData': stockData[0]})
-          } else {
-            res.send({stockData})
-          }
+        //return the stock name, price and likes
+        if (stockData.length === 1) {
+          res.send({'stockData': stockData[0]})
         } else {
-          if (stockData.length == 1) {
-            res.send(stockData[0])
-          } else {
-            res.send(stockData)
-          }
+          res.send({'stockData': stockData})
         }
 
       } catch (err) {
