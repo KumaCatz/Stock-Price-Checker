@@ -1,15 +1,15 @@
 'use strict';
 const bcrypt      = require('bcrypt');
 
-module.exports = function ({ app, dbStocks }) {
+const api     = 'https://stock-price-checker-proxy.freecodecamp.rocks/'
+const salt    = 10
 
-  const api = 'https://stock-price-checker-proxy.freecodecamp.rocks/'
-  const salt = 10
+module.exports = function ({ app, dbStocks }) {
 
   app.route('/api/stock-prices')
     .get(async function (req, res){
       // in case delete the db:
-      const result = await dbStocks.deleteMany();
+      // const result = await dbStocks.deleteMany();
       const {stock, like} = req.query
       const stocks = Array.isArray(stock) ? stock : [stock]
 
@@ -34,6 +34,7 @@ module.exports = function ({ app, dbStocks }) {
             const insertResult = await dbStocks.insertOne(dbStock);
           }
           if (JSON.parse(like)) {
+            console.log('like', like)
             //check in that stock if theres this machines ip address associated with it
             const isIp = await Promise.all(
               dbStock.ip.map(async (ip) => {
@@ -42,7 +43,8 @@ module.exports = function ({ app, dbStocks }) {
             ).then(results => results.some(result => result))
             //if not, hash the ip first
             if (!isIp) {
-              hashedIp = await bcrypt.hash(req.ip, salt)
+              console.log('isIp', isIp)
+              const hashedIp = await bcrypt.hash(req.ip, salt)
               dbStock.ip.push(hashedIp)
               //add the hashed ip to the db stock
               const updatedStock = await dbStocks.updateOne(
@@ -72,8 +74,12 @@ module.exports = function ({ app, dbStocks }) {
         }
         //return the stock name, price and likes(rel if multiple)
         if (req.query.vscodeBrowserReqId) {
+          // // in case delete the db:
+          // const result = await dbStocks.deleteMany();
           res.send(stockData.stockData)
         } else {
+          // // in case delete the db:
+          // const result = await dbStocks.deleteMany();
           res.send(stockData)
         }
 
