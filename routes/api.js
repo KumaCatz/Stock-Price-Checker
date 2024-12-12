@@ -12,29 +12,22 @@ module.exports = function ({ app, dbStocks }) {
       // const result = await dbStocks.deleteMany();
       const {stock, like} = req.query
       const stocks = Array.isArray(stock) ? stock : [stock]
-
       try {
         const stockData = []
-        const numberOfLikes = []
         for (let singleStock of stocks) {
           // format stock to lower letter
           const formStock = singleStock.toLowerCase()
           //check if theres a stock in the db with the same name.
           let dbStock = await dbStocks.findOne({'stock': formStock})
           if (!dbStock) {
-            // get price from api
-            const response = await fetch(api + `v1/stock/${singleStock}/quote`);
-            const data = await response.json();
             //create one with stock, price and likes
             dbStock = {
               'stock': formStock,
-              'price': data.latestPrice,
               'ip': []
             }
             const insertResult = await dbStocks.insertOne(dbStock);
           }
-          if (JSON.parse(like)) {
-            console.log('like', like)
+          if (like && JSON.parse(like)) {
             //check in that stock if theres this machines ip address associated with it
             const isIp = await Promise.all(
               dbStock.ip.map(async (ip) => {
@@ -43,7 +36,6 @@ module.exports = function ({ app, dbStocks }) {
             ).then(results => results.some(result => result))
             //if not, hash the ip first
             if (!isIp) {
-              console.log('isIp', isIp)
               const hashedIp = await bcrypt.hash(req.ip, salt)
               dbStock.ip.push(hashedIp)
               //add the hashed ip to the db stock
@@ -56,11 +48,13 @@ module.exports = function ({ app, dbStocks }) {
                 }
               )
             }
-            numberOfLikes.push(dbStock.ip.length)
           }
+          // get price from api
+          const response = await fetch(api + `v1/stock/${singleStock}/quote`);
+          const data = await response.json();
           stockData.push({
             'stock': singleStock,
-            'price': dbStock.price,
+            'price': data.latestPrice,
             'likes': dbStock.ip.length
           })
         }
@@ -73,14 +67,18 @@ module.exports = function ({ app, dbStocks }) {
           delete stockData[1].likes; 
         }
         //return the stock name, price and likes(rel if multiple)
-        if (req.query.vscodeBrowserReqId) {
-          // // in case delete the db:
-          // const result = await dbStocks.deleteMany();
-          res.send(stockData.stockData)
+        if (like) {
+          if (stockData.length == 1) {
+            res.send({'stockData': stockData[0]})
+          } else {
+            res.send({stockData})
+          }
         } else {
-          // // in case delete the db:
-          // const result = await dbStocks.deleteMany();
-          res.send(stockData)
+          if (stockData.length == 1) {
+            res.send(stockData[0])
+          } else {
+            res.send(stockData)
+          }
         }
 
       } catch (err) {
